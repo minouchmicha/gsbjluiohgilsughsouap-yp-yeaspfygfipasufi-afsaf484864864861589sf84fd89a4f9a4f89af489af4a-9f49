@@ -8,7 +8,6 @@
   },
   "dependencies": {
     "express": "^4.21.2",
-    "ffmpeg-static": "*",
-    "yt-dlp-exec": "*"
+    "ffmpeg-static": "^5.2.0"
   }
 }

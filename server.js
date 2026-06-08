@@ -2,8 +2,7 @@ const express = require("express");
 const path = require("path");
 const fs = require("fs");
 const fsp = require("fs/promises");
-const crypto = require("crypto");
-const { spawn } = require("child_process");
+const ytDlp = require("yt-dlp-exec");
 const ffmpegPath = require("ffmpeg-static");
 
 const app = express();
@@ -14,7 +13,6 @@ const PUBLIC_DIR = path.join(ROOT, "public");
 const TEMP_DIR = path.join(ROOT, "temp");
 
 const RETENTION_MS = 15 * 60 * 1000; // 15 minutes
-const YTDLP_BIN = process.env.YTDLP_PATH || "yt-dlp";
 
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 
@@ -24,7 +22,9 @@ app.use(express.static(PUBLIC_DIR));
 const jobs = new Map();
 
 function nowTime() {
-  return new Date().toLocaleTimeString("en-GB", { hour12: false });
+  return new Date().toLocaleTimeString("en-GB", {
+    hour12: false
+  });
 }
 
 function log(job, message) {
@@ -113,77 +113,6 @@ function scheduleExpiry(job) {
   job.expiresAt = Date.now() + RETENTION_MS;
 }
 
-function runYtDlp(args, job) {
-  return new Promise((resolve, reject) => {
-    const proc = spawn(YTDLP_BIN, args, {
-      stdio: ["ignore", "pipe", "pipe"],
-      windowsHide: true
-    });
-
-    proc.stdout.on("data", (data) => {
-      const text = data.toString().trim();
-      if (text) log(job, text);
-    });
-
-    proc.stderr.on("data", (data) => {
-      const text = data.toString().trim();
-      if (text) log(job, text);
-    });
-
-    proc.on("error", (err) => {
-      reject(err);
-    });
-
-    proc.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`yt-dlp exited with code ${code}`));
-    });
-  });
-}
-
-function buildArgs({ url, quality, format, startTime, endTime, outputTemplate }) {
-  const selectedFormat = safeExt(format);
-
-  const args = [
-    url,
-    "--no-playlist",
-    "--newline",
-    "--no-restrict-filenames",
-    "--no-warnings",
-    "-o",
-    outputTemplate
-  ];
-
-  if (ffmpegPath) {
-    args.push("--ffmpeg-location", ffmpegPath);
-  }
-
-  if (startTime && endTime) {
-    args.push("--download-sections", `*${startTime}-${endTime}`);
-  }
-
-  if (selectedFormat === "mp3") {
-    args.push(
-      "-f",
-      "bestaudio/best",
-      "--extract-audio",
-      "--audio-format",
-      "mp3",
-      "--audio-quality",
-      "0"
-    );
-  } else {
-    args.push(
-      "-f",
-      qualityToFormat(quality),
-      "--merge-output-format",
-      selectedFormat
-    );
-  }
-
-  return args;
-}
-
 async function runDownload(job, payload) {
   try {
     job.status = "running";
@@ -213,16 +142,40 @@ async function runDownload(job, payload) {
 
     log(job, `Output folder: ${TEMP_DIR}`);
 
-    const args = buildArgs({
-      url,
-      quality,
-      format,
-      startTime,
-      endTime,
-      outputTemplate
-    });
+    const baseOptions = {
+      noPlaylist: true,
+      newline: true,
+      noRestrictFilenames: true,
+      noWarnings: true,
+      ffmpegLocation: ffmpegPath || undefined,
+      output: outputTemplate
+    };
 
-    await runYtDlp(args, job);
+    let options = {
+      ...baseOptions
+    };
+
+    if (selectedFormat === "mp3") {
+      options = {
+        ...options,
+        format: "bestaudio/best",
+        extractAudio: true,
+        audioFormat: "mp3",
+        audioQuality: "0"
+      };
+    } else {
+      options = {
+        ...options,
+        format: qualityToFormat(quality),
+        mergeOutputFormat: selectedFormat
+      };
+    }
+
+    if (startTime && endTime) {
+      options.downloadSections = `*${startTime}-${endTime}`;
+    }
+
+    await ytDlp(url, options);
 
     const found = await findJobFile(job.id);
     if (!found) {

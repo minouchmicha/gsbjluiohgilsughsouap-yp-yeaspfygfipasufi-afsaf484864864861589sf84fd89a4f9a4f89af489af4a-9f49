@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RVX Editz Downloader</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="bg-orb orb-1"></div>
+  <div class="bg-orb orb-2"></div>
+
+  <main class="container">
+    <section class="hero card">
+      <div class="badge">RVX Editz Downloader</div>
+      <h1>تحميل مقطع من الفيديو بأعلى جودة</h1>
+      <p>
+        الصق الرابط، حدد البداية والنهاية، واختر الصيغة. الملف يُحفظ مؤقتًا على السيرفر
+        ثم يُحذف تلقائيًا بعد مدة للحفاظ على المساحة.
+      </p>
+    </section>
+
+    <section class="grid">
+      <div class="card form-card">
+        <h2>إعدادات التحميل</h2>
+
+        <label>رابط الفيديو</label>
+        <input id="url" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+
+        <div class="two-cols">
+          <div>
+            <label>وقت البداية</label>
+            <input id="startTime" type="text" placeholder="00:03:45" />
+          </div>
+          <div>
+            <label>وقت النهاية</label>
+            <input id="endTime" type="text" placeholder="00:04:00" />
+          </div>
+        </div>
+
+        <div class="two-cols">
+          <div>
+            <label>الجودة</label>
+            <select id="quality">
+              <option value="BEST">أعلى جودة متاحة</option>
+              <option value="4K">4K</option>
+              <option value="1440P">1440P</option>
+              <option value="1080P">1080P</option>
+              <option value="720P">720P</option>
+              <option value="360P">360P</option>
+            </select>
+          </div>
+
+          <div>
+            <label>الصيغة</label>
+            <select id="format">
+              <option value="mp4">MP4</option>
+              <option value="mkv">MKV</option>
+              <option value="webm">WEBM</option>
+              <option value="mp3">MP3</option>
+            </select>
+          </div>
+        </div>
+
+        <button id="startBtn" class="primary-btn">ابدأ التحميل</button>
+
+        <div class="note">
+          <strong>مهم:</strong> إذا أردت تحميل الفيديو كاملًا، اترك وقت البداية والنهاية فارغين.
+        </div>
+      </div>
+
+      <div class="card status-card">
+        <h2>الحالة</h2>
+
+        <div class="status-line">
+          <span>الحالة الحالية</span>
+          <strong id="statusText">جاهز</strong>
+        </div>
+
+        <div class="status-line">
+          <span>الملف</span>
+          <strong id="fileText">—</strong>
+        </div>
+
+        <div class="status-line">
+          <span>الرابط</span>
+          <strong id="linkText">—</strong>
+        </div>
+
+        <div id="downloadBox" class="download-box hidden">
+          <a id="downloadLink" href="#" class="secondary-btn">تنزيل الملف</a>
+        </div>
+
+        <div class="logs-wrap">
+          <div class="logs-head">
+            <h3>السجل</h3>
+            <button id="clearLogs" class="ghost-btn">مسح</button>
+          </div>
+          <pre id="logs"></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -4,6 +4,7 @@ const fs = require("fs");
 const fsp = require("fs/promises");
 const ytDlp = require("yt-dlp-exec");
 const ffmpegPath = require("ffmpeg-static");
+const crypto = require("crypto"); // إضافة حزمة crypto لإنشاء الـ UUID
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,7 +13,7 @@ const ROOT = __dirname;
 const PUBLIC_DIR = path.join(ROOT, "public");
 const TEMP_DIR = path.join(ROOT, "temp");
 
-const RETENTION_MS = 15 * 60 * 1000; // 15 minutes
+const RETENTION_MS = 15 * 60 * 1000; // 15 دقيقة مسافة الحفظ قبل الحذف
 
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 
@@ -142,14 +143,27 @@ async function runDownload(job, payload) {
 
     log(job, `Output folder: ${TEMP_DIR}`);
 
+    // تحديد مسار ملف الـ Cookies المتوقع في المجلد الرئيسي للبرشوع
+    const cookiesPath = path.join(ROOT, "cookies.txt");
+
     const baseOptions = {
       noPlaylist: true,
       newline: true,
       noRestrictFilenames: true,
       noWarnings: true,
       ffmpegLocation: ffmpegPath || undefined,
-      output: outputTemplate
+      output: outputTemplate,
+      // كود إضافي لمحاكاة متصفحات حقيقية لتقليل نسب الحظر السحابي
+      extractorArgs: "youtube:player_client=web,mweb,android"
     };
+
+    // فحص وجود ملف الكوكيز واستخدامه برمجياً عند وجوده
+    if (fs.existsSync(cookiesPath)) {
+      baseOptions.cookies = cookiesPath;
+      log(job, "Using cookies.txt for authentication.");
+    } else {
+      log(job, "Notice: cookies.txt not found. Trying without cookies...");
+    }
 
     let options = {
       ...baseOptions
